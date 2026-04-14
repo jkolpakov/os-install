@@ -1,0 +1,116 @@
+
+for disk in /dev/sd{a,b,c,d,e,f,g}; do
+  parted -s $disk mklabel gpt
+  parted -s $disk mkpart primary 0% 100%
+  parted -s $disk set 1 raid on
+done
+
+for disk in /dev/sd{a,b,c,d,e,f,g}1; do
+  wipefs -a $disk
+  mdadm --zero-superblock $disk
+done
+
+mdadm --create /dev/md0                                    \
+  --level=6                                                 \
+  --raid-devices=6                                           \
+  /dev/sda1 /dev/sdb1 /dev/sdc1 /dev/sdd1 /dev/sde1 /dev/sdf1 \
+  --spare-devices=1                                            \
+  /dev/sdg1                                                     \
+  --metadata=1.2                                                 \
+  --assume-clean
+
+mkfs.btrfs -L main /dev/md0
+
+mount /dev/disk/by-label/main /mnt
+cd /mnt
+btrfs su cr @
+btrfs su cr @home
+
+... console=ttyS0,115200
+
+mount -o rw,noatime,compress=zstd:2,ssd,discard=async,space_cache=v2,subvol=@  /dev/disk/by-label/main /mnt
+mkdir /mnt/home
+mount -o rw,noatime,compress=zstd:2,ssd,discard=async,space_cache=v2,subvol=@home  /dev/disk/by-label/main /mnt/home
+mkdir /mnt/boot
+mount /dev/sdh1 /mnt/boot
+mkdir /mnt/boot/efi
+mount /dev/sdh2 /mnt/boot/efi
+
+
+mount -o rw,noatime,compress=zstd:2,ssd,discard=async,space_cache=v2,subvol=@  /dev/disk/by-label/main /mnt
+mount -o rw,noatime,compress=zstd:2,ssd,discard=async,space_cache=v2,subvol=@home  /dev/disk/by-label/main /mnt/home
+mount /dev/sdh1 /mnt/boot
+mount /dev/sdh2 /mnt/boot/efi
+
+
+reflector -c Russia -c Kazakhstan -c Kyrgyzstan -c Uzbekistan --age 12 --sort rate --fastest 5 --save /etc/pacman.d/mirrorlist
+reflector -c Russia --age 12 --sort rate --fastest 5 --save /etc/pacman.d/mirrorlist
+
+pacstrap /mnt base base-devel linux linux-firmware linux-headers nano vim bash-completion grub efibootmgr btrfs-progs mc intel-ucode mdadm
+
+genfstab -U /mnt >> /mnt/etc/fstab
+
+arch-chroot /mnt
+
+ln -sf /usr/share/zoneinfo/Asia/Almaty /etc/localtime
+
+timedatectl set-ntp true
+
+hwclock --systohc --utc
+
+nano /etc/hostname
+archvirt
+
+nano /etc/hosts
+127.0.0.1    localhost
+::1          localhost
+127.0.1.1    archvirt.localdomain archvirt
+
+
+nano /etc/vconsole.conf
+KEYMAP=en
+FONT=cyr-sun16
+FONST=UniCyrExt_8x16
+
+
+nano /etc/locale.conf
+LANG=eu_US.UTF-8
+LC_COLLATE=C
+
+nano /etc/locale.gen
+
+
+locale-gen
+
+passwd
+
+nano /etc/mkinitcpio.conf
+MODULES=(btrfs)
+HOOKS=(base systemd autodetect microcode modconf kms keyboard keymap sd-vconsole block filesystems fsck keymap mdadm_udev udev)
+
+mdadm --detail --scan /dev/md0 > /etc/mdadm.conf
+
+mkinitcpio -P
+
+pacman -S links wget curl zsh git unzip unrar grub efibootmgr  dhcpcd
+
+useradd -m -g users -G wheel -s /bin/zsh pompei
+
+EDITOR=nano visudo
+
+passwd pompei
+
+grub-install --efi-directory=/boot/efi
+
+nano /etc/default/grub
+GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet console=ttyS0,115200 console=tty0"
+
+
+grub-mkconfig -o /boot/grub/grub.cfg
+
+systemctl enable dhcpcd.service
+
+EDITOR=nano visudo
+
+exit
+umount -R /mnt
