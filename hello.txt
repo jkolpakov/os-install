@@ -1,0 +1,12 @@
+
+Arch Linux
+
+INSTALL
+
+In VirtualBox
+Terminal -> COM1 Port = CopyPaste
+Over Btrfs : / -> su @ + /home -> su @home
+Over RAID6 (4 + 2 + 1 spare)
+Boot EFI
+
+Check Break DIST -> Auto Restore Spare

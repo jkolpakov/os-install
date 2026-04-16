@@ -1,3 +1,5 @@
+... console=ttyS0,115200
+socat -,cfmakeraw,echo=0,escape=07 TCP4:localhost:9999
 
 for disk in /dev/sd{a,b,c,d,e,f,g}; do
   parted -s $disk mklabel gpt
@@ -5,7 +7,7 @@ for disk in /dev/sd{a,b,c,d,e,f,g}; do
   parted -s $disk set 1 raid on
 done
 
-for disk in /dev/sd{a,b,c,d,e,f,g}1; do
+for disk in /dev/sd{a,b,c,d,e,f,g}; do
   wipefs -a $disk
   mdadm --zero-superblock $disk
 done
@@ -13,11 +15,16 @@ done
 mdadm --create /dev/md0                                    \
   --level=6                                                 \
   --raid-devices=6                                           \
-  /dev/sda1 /dev/sdb1 /dev/sdc1 /dev/sdd1 /dev/sde1 /dev/sdf1 \
+  /dev/sda /dev/sdb /dev/sdc /dev/sdd /dev/sde /dev/sdf \
   --spare-devices=1                                            \
-  /dev/sdg1                                                     \
+  /dev/sdg                                                     \
   --metadata=1.2                                                 \
   --assume-clean
+
+watch cat /proc/mdstat
+mdadm --detail /dev/md0
+
+mdadm --detail --scan > /etc/mdadm.conf
 
 mkfs.btrfs -L main /dev/md0
 
@@ -26,8 +33,6 @@ cd /mnt
 btrfs su cr @
 btrfs su cr @home
 
-... console=ttyS0,115200
-
 mount -o rw,noatime,compress=zstd:2,ssd,discard=async,space_cache=v2,subvol=@  /dev/disk/by-label/main /mnt
 mkdir /mnt/home
 mount -o rw,noatime,compress=zstd:2,ssd,discard=async,space_cache=v2,subvol=@home  /dev/disk/by-label/main /mnt/home
@@ -35,6 +40,8 @@ mkdir /mnt/boot
 mount /dev/sdh1 /mnt/boot
 mkdir /mnt/boot/efi
 mount /dev/sdh2 /mnt/boot/efi
+
+mount | grep '/mnt'
 
 
 mount -o rw,noatime,compress=zstd:2,ssd,discard=async,space_cache=v2,subvol=@  /dev/disk/by-label/main /mnt
@@ -94,16 +101,16 @@ mkinitcpio -P
 
 pacman -S links wget curl zsh git unzip unrar grub efibootmgr  dhcpcd
 
-useradd -m -g users -G wheel -s /bin/zsh pompei
+useradd -m -g users -G wheel -s /bin/zsh user
 
 EDITOR=nano visudo
 
-passwd pompei
+passwd user
 
 grub-install --efi-directory=/boot/efi
 
 nano /etc/default/grub
-GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet console=ttyS0,115200 console=tty0"
+GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 console=ttyS0,115200 console=tty0"
 
 
 grub-mkconfig -o /boot/grub/grub.cfg
@@ -114,3 +121,13 @@ EDITOR=nano visudo
 
 exit
 umount -R /mnt
+
+-------
+
+watch cat /proc/mdstat
+sudo mdadm --detail /dev/md0
+
+sudo lsblk -f
+
+dd if=/dev/urandom of=stone bs=1M count=100
+md5sum stone.bin > stone.md5sum
