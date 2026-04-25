@@ -81,7 +81,7 @@ FONST=UniCyrExt_8x16
 
 
 nano /etc/locale.conf
-LANG=eu_US.UTF-8
+LANG=en_US.UTF-8
 LC_COLLATE=C
 
 nano /etc/locale.gen
