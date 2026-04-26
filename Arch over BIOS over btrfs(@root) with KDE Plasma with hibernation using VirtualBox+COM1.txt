@@ -62,7 +62,7 @@ nano /etc/vconsole.conf
 KEYMAP=en
 FONT=cyr-sun16
 FONT=UniCyrExt_8x16
-FONT=ter-c16n
+FONT=ter-c24n
 
 
 nano /etc/locale.conf
