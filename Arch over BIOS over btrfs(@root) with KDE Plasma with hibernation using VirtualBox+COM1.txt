@@ -116,7 +116,7 @@ grub-install --recheck /dev/sda
 # input as user
 
 sudo pacman -Syu
-sudo pacman -S plasma-meta kde-applications sddm networkmanager
+sudo pacman -S plasma-meta kde-applications sddm networkmanager network-manager-applet
 
 sudo systemctl enable sddm
 sudo systemctl start sddm
