@@ -120,7 +120,7 @@ grub-install --recheck /dev/sda
 # input as user
 
 sudo pacman -Syu
-sudo pacman -S plasma-meta kde-applications sddm
+sudo pacman -S plasma-meta kde-applications sddm networkmanager
 
 sudo systemctl enable sddm
 sudo systemctl start sddm
