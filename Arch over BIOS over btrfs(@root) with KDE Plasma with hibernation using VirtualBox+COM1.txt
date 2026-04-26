@@ -1,6 +1,11 @@
-
 ... console=ttyS0,115200
 socat -,cfmakeraw,echo=0,escape=07 TCP4:localhost:9999
+
+iwctl
+  device list
+  station wlan0 scan
+  station wlan0 get-networks
+  station wlan0 connect "SSID"
 
 lsblk -f
 
