@@ -87,7 +87,7 @@ HOOKS=(base systemd autodetect microcode modconf kms keyboard keymap sd-vconsole
 
 mkinitcpio -P
 
-pacman -S links wget curl zsh git unzip unrar grub efibootmgr  dhcpcd
+pacman -S links wget curl zsh git unzip unrar grub efibootmgr  dhcpcd iwd
 
 useradd -m -g users -G wheel -s /bin/bash user
 
@@ -106,10 +106,6 @@ GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 console=ttyS0,115200"
 grub-install --target=i386-pc /dev/sda
 
 grub-mkconfig -o /boot/grub/grub.cfg
-
-# Internet after boot into new OS
-
-systemctl enable dhcpcd.service
 
 # Check grub installed
 grub-install --recheck /dev/sda
