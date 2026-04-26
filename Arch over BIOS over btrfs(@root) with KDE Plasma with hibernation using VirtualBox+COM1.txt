@@ -1,0 +1,122 @@
+
+... console=ttyS0,115200
+socat -,cfmakeraw,echo=0,escape=07 TCP4:localhost:9999
+
+lsblk -f
+
+# Preparing DISK /dev/sda
+
+parted /dev/sda --script mklabel msdos
+parted /dev/sda --script mkpart primary linux-swap 1MiB 16GiB
+parted /dev/sda --script mkpart primary btrfs 16GiB 100%
+
+# Check it
+
+parted /dev/sda print
+
+# Formatting
+
+mkswap /dev/sda1
+mkfs.btrfs -L main /dev/sda2
+
+# Preparing BTRFS subvolumes
+
+mount /dev/disk/by-label/main /mnt
+cd /mnt
+btrfs su cr @root
+
+cd ..
+umount /mnt
+
+mount -o rw,noatime,compress=zstd:2,ssd,discard=async,space_cache=v2,subvol=@root  /dev/disk/by-label/main /mnt
+
+swapon /dev/sda1
+
+reflector -c Russia -c Kazakhstan -c Kyrgyzstan -c Uzbekistan --age 12 --sort rate --fastest 5 --save /etc/pacman.d/mirrorlist
+reflector -c Russia --age 12 --sort rate --fastest 5 --save /etc/pacman.d/mirrorlist
+
+pacstrap /mnt base base-devel linux linux-firmware linux-headers nano vim micro bash-completion grub efibootmgr btrfs-progs mc intel-ucode terminus-font
+
+genfstab -U /mnt >> /mnt/etc/fstab
+
+arch-chroot /mnt
+
+# Preparation OS
+
+ln -sf /usr/share/zoneinfo/Asia/Almaty /etc/localtime
+
+timedatectl set-ntp true
+
+hwclock --systohc --utc
+
+nano /etc/hostname
+archvirt
+
+nano /etc/hosts
+127.0.0.1    localhost
+::1          localhost
+127.0.1.1    archvirt.localdomain archvirt
+
+
+nano /etc/vconsole.conf
+KEYMAP=en
+FONT=cyr-sun16
+FONT=UniCyrExt_8x16
+FONT=ter-c16n
+
+
+nano /etc/locale.conf
+LANG=en_US.UTF-8
+LC_COLLATE=C
+
+nano /etc/locale.gen
+
+
+locale-gen
+
+passwd
+
+nano /etc/mkinitcpio.conf
+MODULES=(btrfs)
+HOOKS=(base systemd autodetect microcode modconf kms keyboard keymap sd-vconsole block filesystems fsck keymap)
+
+mkinitcpio -P
+
+pacman -S links wget curl zsh git unzip unrar grub efibootmgr  dhcpcd
+
+useradd -m -g users -G wheel -s /bin/bash user
+
+EDITOR=nano visudo
+
+passwd user
+
+# Install loader : grub
+
+nano /etc/default/grub
+GRUB_TIMEOUT=1
+GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"
+GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 console=ttyS0,115200"
+
+
+grub-install --target=i386-pc /dev/sda
+
+grub-mkconfig -o /boot/grub/grub.cfg
+
+# Internet after boot into new OS
+
+systemctl enable dhcpcd.service
+
+# Check grub installed
+grub-install --recheck /dev/sda
+
+
+# AFTER BOOT IN NEW OS
+
+# input as user
+
+sudo pacman -Syu
+sudo pacman -S plasma-meta kde-applications sddm
+
+sudo systemctl enable sddm
+sudo systemctl start sddm
+
