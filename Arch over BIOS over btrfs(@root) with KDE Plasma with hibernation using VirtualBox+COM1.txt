@@ -40,7 +40,7 @@ swapon /dev/sda1
 reflector -c Russia -c Kazakhstan -c Kyrgyzstan -c Uzbekistan --age 12 --sort rate --fastest 5 --save /etc/pacman.d/mirrorlist
 reflector -c Russia --age 12 --sort rate --fastest 5 --save /etc/pacman.d/mirrorlist
 
-pacstrap /mnt base base-devel linux linux-firmware linux-headers nano vim micro bash-completion grub efibootmgr btrfs-progs mc intel-ucode terminus-font
+pacstrap /mnt base base-devel linux linux-firmware linux-headers nano vim micro bash-completion grub btrfs-progs mc intel-ucode terminus-font
 
 genfstab -U /mnt >> /mnt/etc/fstab
 
